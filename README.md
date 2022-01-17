@@ -1,2 +1,2 @@
 # crypto-trading
-Monorepo for crypto-related trading projects
+Repo for crypto-related trading projects

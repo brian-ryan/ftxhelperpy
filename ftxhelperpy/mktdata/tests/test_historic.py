@@ -23,6 +23,10 @@ class TestHistDataFetchMethods(unittest.TestCase):
         self.assertGreater(len(prices), 0)
 
     def test_get_historical_prices_invalid_date_range_is_empty_dataframe(self):
+        rates = self.data_fetcher.get_historical_rates("SOL-PERP", datetime.now() + timedelta(hours=1), datetime.now() + timedelta(hours=2))
+        self.assertTrue(rates.empty)
+
+    def test_get_historical_rates_invalid_date_range_is_empty_dataframe(self):
         prices = self.data_fetcher.get_historical_prices("BTC-PERP", datetime.now() + timedelta(hours=1), datetime.now() + timedelta(hours=2))
         self.assertTrue(prices.empty)
 
@@ -37,16 +41,29 @@ class TestHistDataFetchMethods(unittest.TestCase):
         time_jumps = (prices['time'][1] - prices['time'][0])/1000
         self.assertEqual(time_jumps, resolution)
 
+    def test_historical_funding_rates_valid_args_successful(self):
+        rates = self.data_fetcher.get_historical_rates("SOL-PERP", datetime.now() - timedelta(hours=10), datetime.now())
+        self.assertIsInstance(rates, pd.DataFrame)
+        self.assertGreater(len(rates), 0)
+
     def test_get_historical_prices_invalid_resolution_raises_exception(self):
         resolution = 350
         with self.assertRaises(Exception) as context:
             self.data_fetcher.get_historical_prices("BTC-PERP", datetime.now() - timedelta(hours=1),  datetime.now(), resolution)
-            self.assertTrue('invalid candle resolution' in context.exception)
+
+        self.assertTrue('Unsupported candle resolution' in str(context.exception))
 
     def test_get_historical_prices_invalid_symbol_raises_exception(self):
         with self.assertRaises(Exception) as context:
             self.data_fetcher.get_historical_prices("AA321", datetime.now() + timedelta(hours=1), datetime.now() + timedelta(hours=2))
-            self.assertTrue('No such market' in context.exception)
+
+        self.assertTrue('No such market' in str(context.exception))
+
+    def test_get_historical_rates_invalid_symbol_raises_exception(self):
+        with self.assertRaises(Exception) as context:
+            self.data_fetcher.get_historical_rates("ACBX99", datetime.now() - timedelta(hours=10), datetime.now())
+
+        self.assertTrue('No such future' in str(context.exception))
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,16 +1,14 @@
 import os
-import sys
 import unittest
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from ftxhelperpy.utils.connect import Connector
 
-import connect
 
 class TestConnectMethods(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.connector = connect.Connector(os.getenv("FTX_ENDPOINT"))
+        cls.connector = Connector(os.getenv("FTX_ENDPOINT"))
 
     def setUp(self) -> None:
         self.connector = TestConnectMethods.connector

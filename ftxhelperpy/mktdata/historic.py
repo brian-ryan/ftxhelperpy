@@ -27,7 +27,7 @@ class HistDataFetcher:
         return prices_df
 
     def get_historical_prices(self, symbol: str, start_time: datetime,
-                              end_time: datetime, resolution: int = 60) -> pd.DataFrame():
+                              end_time: datetime, resolution: int = 60) -> pd.DataFrame:
         """Retrieves the historical prices (candle format) for a symbols
 
             Args:

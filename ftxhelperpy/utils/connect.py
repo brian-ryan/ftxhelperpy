@@ -12,7 +12,7 @@ class Connector:
     def create_session(self) -> None:
         self.session = Session()
 
-    def add_auth_headers(self, request) -> PreparedRequest:
+    def add_auth_headers(self, prepared_request: type[PreparedRequest]) -> PreparedRequest:
         """Adds authentication headers to the request.
 
         Args:
@@ -23,14 +23,13 @@ class Connector:
         """
 
         ts = int(time.time() * 1000)
-        prepared = request.prepare()
-        signature = self.get_signature(prepared, ts)
-        prepared.headers['FTX-KEY'] = os.getenv('FTX_KEY1')
-        prepared.headers['FTX-SIGN'] = signature
-        prepared.headers['FTX-TS'] = str(ts)
-        return prepared
+        signature = self.get_signature(prepared_request, ts)
+        prepared_request.headers['FTX-KEY'] = os.getenv('FTX_KEY1')
+        prepared_request.headers['FTX-SIGN'] = signature
+        prepared_request.headers['FTX-TS'] = str(ts)
+        return prepared_request
 
-    def get_signature(self, prepared_request, ts) -> hmac:
+    def get_signature(self, prepared_request: type[PreparedRequest], ts: int) -> hmac:
         """Returns a hmac signature for a request
 
         Args:
@@ -47,7 +46,7 @@ class Connector:
         signature = hmac.new(os.getenv('FTX_SECRET1').encode(), signature_payload, 'sha256').hexdigest()
         return signature
 
-    def auth_get_request(self, endpoint) -> Response:
+    def auth_get_request(self, endpoint: str, query_params: dict = {}) -> Response:
         """Makes an authenticated GET request.
 
         Args:
@@ -58,12 +57,13 @@ class Connector:
         """
 
         full_path = self.api_endpoint + "/" + endpoint
-        request = Request('GET', full_path)
-        prepared_request = self.add_auth_headers(request)
+        prepared_request = Request('GET', full_path).prepare()
+        prepared_request.prepare_url(prepared_request.url, query_params)
+        prepared_request = self.add_auth_headers(prepared_request)
         response = self.session.send(prepared_request)
         return response
 
-    def auth_post_request(self, endpoint, payload = {}) -> Response:
+    def auth_post_request(self, endpoint: str, payload: dict = {}) -> Response:
         """Makes an authenticated POST request.
 
            Args:
@@ -75,12 +75,12 @@ class Connector:
         """
 
         full_path = self.api_endpoint + "/" + endpoint
-        request = Request('POST', full_path, json = payload)
-        prepared_request = self.add_auth_headers(request)
+        prepared_request = Request('POST', full_path, json = payload).prepare()
+        prepared_request = self.add_auth_headers(prepared_request)
         response = self.session.send(prepared_request)
         return response
 
-    def auth_delete_request(self, endpoint, payload={}) -> Response:
+    def auth_delete_request(self, endpoint: str, payload: dict={}) -> Response:
         """Makes an authenticated POST request.
 
            Args:
@@ -92,7 +92,7 @@ class Connector:
         """
 
         full_path = self.api_endpoint + "/" + endpoint
-        request = Request('DELETE', full_path, json=payload)
-        prepared_request = self.add_auth_headers(request)
+        prepared_request = Request('DELETE', full_path, json=payload).prepare()
+        prepared_request = self.add_auth_headers(prepared_request)
         response = self.session.send(prepared_request)
         return response

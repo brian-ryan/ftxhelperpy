@@ -4,7 +4,7 @@ import unittest
 
 from datetime import datetime, timedelta
 
-from ftxhelperpy.mktdata.historic import HistDataFetcher
+from ftxhelperpy.mktdata.prices import HistDataFetcher
 from ftxhelperpy.utils.connect import Connector
 
 class TestHistDataFetchMethods(unittest.TestCase):
@@ -45,6 +45,21 @@ class TestHistDataFetchMethods(unittest.TestCase):
         rates = self.data_fetcher.get_historical_rates("SOL-PERP", datetime.now() - timedelta(hours=10), datetime.now())
         self.assertIsInstance(rates, pd.DataFrame)
         self.assertGreater(len(rates), 0)
+
+    def test_get_historical_trades_valid_args_is_successful(self):
+        trades = self.data_fetcher.get_historical_trades("BTC-PERP", datetime.now() - timedelta(hours=1), datetime.now())
+        self.assertIsInstance(trades, pd.DataFrame)
+        self.assertGreater(len(trades), 0)
+
+    def test_get_historical_trades_invalid_future_raises_exception(self):
+        with self.assertRaises(Exception) as context:
+            self.data_fetcher.get_historical_trades("AA312", datetime.now() - timedelta(hours=1), datetime.now())
+
+        self.assertTrue('No such market' in str(context.exception))
+
+    def test_get_historical_trades_invalid_dates_is_empty_dataframe(self):
+        trades = self.data_fetcher.get_historical_trades("BTC-PERP", datetime.now() + timedelta(hours=1), datetime.now()+timedelta(hours=2))
+        self.assertTrue(trades.empty)
 
     def test_get_historical_prices_invalid_resolution_raises_exception(self):
         resolution = 350

@@ -38,7 +38,7 @@ class HistDataFetcher:
 
         rates_dict = response['result']
         if len(rates_dict)==0:
-            return pd.DataFrame
+            return pd.DataFrame()
 
         rates_df = pd.DataFrame.from_dict(rates_dict).sort_values(by='time', ascending=True).reset_index(drop=True)
         rates_df['time'] = rates_df['time'].apply(lambda x: parser.parse(x))
@@ -54,7 +54,7 @@ class HistDataFetcher:
 
         trades_dict = response['result']
         if len(trades_dict)==0:
-            return pd.DataFrame
+            return pd.DataFrame()
 
         trades_df = pd.DataFrame.from_dict(trades_dict).sort_values(by='time', ascending=True).reset_index(drop=True)
         trades_df['time'] = trades_df['time'].apply(lambda x: parser.parse(x))

@@ -27,6 +27,11 @@ class TestHistDataFetchMethods(unittest.TestCase):
         self.assertIsInstance(prices, pd.DataFrame)
         self.assertGreater(len(prices), 0)
 
+    def test_get_future_prices_successful(self):
+        prices = self.data_fetcher.get_future_prices("BTC-PERP", datetime.now() - timedelta(hours=1), datetime.now())
+        self.assertIsInstance(prices, pd.DataFrame)
+        self.assertGreater(len(prices), 0)
+
     def test_get_index_prices_with_resolution_successful(self):
         resolution = 300
         prices = self.data_fetcher.get_index_prices("BTC", datetime.now() - timedelta(hours=1), datetime.now(), resolution)

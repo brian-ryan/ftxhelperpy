@@ -25,6 +25,7 @@ class HistDataFetcher:
             return pd.DataFrame()
 
         prices_df = pd.DataFrame.from_dict(prices_dict).sort_values(by='time', ascending=True).reset_index(drop=True)
+        prices_df['startTime'] = prices_df['startTime'].apply(lambda x: parser.parse(x))
         return prices_df
 
     def _format_rates(self, response: dict) -> pd.DataFrame:
@@ -60,7 +61,7 @@ class HistDataFetcher:
         trades_df['time'] = trades_df['time'].apply(lambda x: parser.parse(x))
         return trades_df
 
-    def get_historical_prices(self, symbol: str, start_time: datetime,
+    def get_future_prices(self, symbol: str, start_time: datetime,
                               end_time: datetime, resolution: int = 60) -> pd.DataFrame:
         """Retrieves the historical prices (candle format) for a symbols
 
@@ -87,7 +88,33 @@ class HistDataFetcher:
 
         return self._format_prices(response)
 
-    def get_historical_rates(self, symbol: str, start_time: datetime, end_time: datetime) -> pd.DataFrame:
+    def get_index_prices(self, symbol: str, start_time: datetime,
+                              end_time: datetime, resolution: int = 60) -> pd.DataFrame:
+        """Retrieves the historical prices (candle format) for indices
+
+            Args:
+                symbol: The symbol of the instrument. e.g. BTC
+                start_time: Start of the interval of time to retrieve prices
+                end_time: End of the interval of time to retrieve prices
+                resolution: The size of the candle in seconds.
+                e.g. resolution = 300 means 5 minute candles
+
+            Returns:
+                A pandas dataframe of historical prices"""
+
+        endpoint = "indexes/{0}/candles".format(symbol)
+        query_params = {
+            'start_time': datetime.timestamp(start_time),
+            'end_time': datetime.timestamp(end_time),
+            'resolution': resolution
+        }
+        response = self.connector.auth_get_request(endpoint, query_params).json()
+        if response['success']==False:
+            raise Exception(response['error'])
+
+        return self._format_prices(response)
+
+    def get_rates(self, symbol: str, start_time: datetime, end_time: datetime) -> pd.DataFrame:
         """Retrieves the historical prices (candle format) for a symbol
 
             Args:
@@ -118,7 +145,7 @@ class HistDataFetcher:
 
         return self._format_rates(response)
 
-    def get_historical_trades(self, symbol: str, start_time: datetime, end_time: datetime) -> pd.DataFrame:
+    def get_trades(self, symbol: str, start_time: datetime, end_time: datetime) -> pd.DataFrame:
         """Retrieves the historical trades for a given symbol
 
             Args:

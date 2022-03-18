@@ -4,7 +4,7 @@ import unittest
 
 from datetime import datetime, timedelta
 
-from ftxhelperpy.mktdata.prices import HistDataFetcher
+from ftxhelperpy.mktdata.prices import HistDataFetcher, LiveDataFetcher
 from ftxhelperpy.utils.connect import Connector
 
 class TestHistDataFetchMethods(unittest.TestCase):
@@ -105,9 +105,37 @@ class TestHistDataFetchMethods(unittest.TestCase):
             self.data_fetcher.get_rates("ACBX99", datetime.now() - timedelta(hours=10), datetime.now())
         self.assertTrue('No such future' in str(context.exception))
 
+class TestLiveDataFetchMethods(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        connector = Connector(os.getenv("FTX_ENDPOINT"))
+        cls.data_fetcher = LiveDataFetcher(connector)
+
+    def setUp(self) -> None:
+        self.data_fetcher = TestLiveDataFetchMethods.data_fetcher
+
+    def test_get_order_book_valid_symbol_successful(self):
+        order_book = self.data_fetcher.get_order_book("BTC-PERP")
+
+        self.assertTrue('bids' in order_book)
+        self.assertTrue('asks' in order_book)
+
+        self.assertTrue(type(order_book['bids'])==list)
+        self.assertTrue(type(order_book['asks']) == list)
+
+        self.assertTrue('price' in order_book['bids'][0])
+        self.assertTrue('size' in order_book['bids'][0])
+
+    def test_get_order_book_with_depth_successful(self):
+        depth = 3
+        order_book = self.data_fetcher.get_order_book("BTC-PERP", depth)
+        self.assertEqual(len(order_book['bids']), depth)
+
+    def test_get_orderbook_invalid_symbol_raises_exception(self):
+        with self.assertRaises(Exception) as context:
+            self.data_fetcher.get_order_book("AA312")
+        self.assertTrue('No such market' in str(context.exception))
+
 if __name__ == '__main__':
     unittest.main()
-
-
-
-

@@ -172,3 +172,42 @@ class HistDataFetcher:
             raise Exception(response['error'])
 
         return self._format_trades(response)
+
+class LiveDataFetcher:
+
+    def __init__(self, Connector: type[Connector]):
+        self.connector = Connector
+
+    def get_order_book(self, symbol: str, depth: int = 20) -> dict:
+        """Returns the order book for the given symbol
+
+            Args:
+                symbol: A string representing the
+                symbol to retrieve the order book for
+
+                depth: How many levels of the bid/offer
+                to retrieve. Defaults to 20, max value is 100
+
+            Returns:
+                 A dictionary with top level keys consisting
+                 of 'bids' and 'asks'. Each of these keys
+                 contains an array of objects where each object
+                 has a key for 'price' and 'size' indicating
+                 a level. The first element in each array
+                 is the most competitive bid/ask
+            """
+
+        endpoint = "/markets/{0}/orderbook".format(symbol)
+        query_params = {
+            'depth': depth
+        }
+
+        response = self.connector.auth_get_request(endpoint, query_params).json()
+
+        if response['success'] == False:
+            raise Exception(response['error'])
+
+        order_book = {}
+        order_book['bids'] = list(map(lambda x: {'price': x[0], 'size': x[1]}, response['result']['bids']))
+        order_book['asks'] = list(map(lambda x: {'price': x[0], 'size': x[1]}, response['result']['asks']))
+        return order_book

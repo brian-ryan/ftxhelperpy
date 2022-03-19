@@ -10,7 +10,7 @@ class HistDataFetcher:
     def __init__(self, Connector: type[Connector]):
         self.connector = Connector
 
-    def _format_prices(self, response: dict) -> pd.DataFrame:
+    def _format_prices(self, response: dict, include_return: bool) -> pd.DataFrame:
         """Converts the response from a historical prices request to a pandas dataframe
 
             Args:
@@ -26,6 +26,10 @@ class HistDataFetcher:
 
         prices_df = pd.DataFrame.from_dict(prices_dict).sort_values(by='time', ascending=True).reset_index(drop=True)
         prices_df['startTime'] = prices_df['startTime'].apply(lambda x: parser.parse(x))
+
+        if include_return:
+            prices_df = self._calc_returns(prices_df)
+
         return prices_df
 
     def _format_rates(self, response: dict) -> pd.DataFrame:
@@ -61,16 +65,43 @@ class HistDataFetcher:
         trades_df['time'] = trades_df['time'].apply(lambda x: parser.parse(x))
         return trades_df
 
+    def _calc_returns(self, prices: pd.DataFrame) -> pd.DataFrame:
+        """Adds a column for 'return' to a dataframe of
+        prices.
+
+            Args:
+                prices: A pandas dataframe which must contain
+                a column called 'open' representing the price
+                of a symbol at the open of an interval
+
+            Returns:
+                The prices dataframe with a new column called 'return'
+                which is the return from the open of the previous
+                interval to the open of the current interval
+        """
+
+        prices['return'] = (prices['open']/prices['open'].shift(1)) - 1
+        return prices
+
     def get_future_prices(self, symbol: str, start_time: datetime,
-                              end_time: datetime, resolution: int = 60) -> pd.DataFrame:
+                              end_time: datetime, resolution: int = 60,
+                          include_return: bool = False) -> pd.DataFrame:
         """Retrieves the historical prices (candle format) for a symbols
 
             Args:
                 symbol: The symbol of the instrument. e.g. BTC-PERP
+
                 start_time: Start of the interval of time to retrieve prices
+
                 end_time: End of the interval of time to retrieve prices
                 resolution: The size of the candle in seconds.
                 e.g. resolution = 300 means 5 minute candles
+
+                include_return: Boolean representing whether to calculate
+                interval returns on the prices dataframe. The returns are simple returns,
+                not log-based i.e. (Pt1/Pt0) - 1 The returns look back, so if the return is 5% at 1/1/2000 12:00 pm,
+                and the resolution is set to 60 (1 minute) this means the return from
+                11.59 am -> 12:00 pm was 5%. Defaults to false
 
             Returns:
                 A pandas dataframe of historical prices"""
@@ -86,18 +117,27 @@ class HistDataFetcher:
         if response['success']==False:
             raise Exception(response['error'])
 
-        return self._format_prices(response)
+        return self._format_prices(response, include_return)
 
     def get_index_prices(self, symbol: str, start_time: datetime,
-                              end_time: datetime, resolution: int = 60) -> pd.DataFrame:
+                              end_time: datetime, resolution: int = 60,
+                            include_return: bool = False) -> pd.DataFrame:
         """Retrieves the historical prices (candle format) for indices
 
             Args:
                 symbol: The symbol of the instrument. e.g. BTC
+
                 start_time: Start of the interval of time to retrieve prices
+
                 end_time: End of the interval of time to retrieve prices
                 resolution: The size of the candle in seconds.
                 e.g. resolution = 300 means 5 minute candles
+
+                include_return: Boolean representing whether to calculate
+                interval returns on the prices dataframe. The returns are simple returns,
+                not log-based i.e. (Pt1/Pt0) - 1 The returns look back, so if the return is 5% at 1/1/2000 12:00 pm,
+                and the resolution is set to 60 (1 minute) this means the return from
+                11.59 am -> 12:00 pm was 5%. Defaults to false
 
             Returns:
                 A pandas dataframe of historical prices"""
@@ -112,7 +152,7 @@ class HistDataFetcher:
         if response['success']==False:
             raise Exception(response['error'])
 
-        return self._format_prices(response)
+        return self._format_prices(response, include_return)
 
     def get_rates(self, symbol: str, start_time: datetime, end_time: datetime) -> pd.DataFrame:
         """Retrieves the historical prices (candle format) for a symbol

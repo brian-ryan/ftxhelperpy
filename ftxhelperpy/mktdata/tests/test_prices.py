@@ -41,6 +41,50 @@ class TestHistDataFetchMethods(unittest.TestCase):
         time_jumps = (prices['time'][1] - prices['time'][0]) / 1000
         self.assertEqual(time_jumps, resolution)
 
+    def test_get_index_prices_with_include_returns_true(self):
+        resolution = 300
+        prices = self.data_fetcher.get_index_prices("BTC", datetime.now() - timedelta(hours=1), datetime.now(),
+                                                    resolution, include_return=True)
+        self.assertTrue('return' in list(prices.columns))
+
+        #pick a time and get the open at that time
+        random_time = list(prices['startTime'])[3]
+        open_at_random_time = list(prices[prices['startTime']==random_time]['open'])[0]
+
+        #get what should be the open for the previous interval
+        time_before = random_time - timedelta(seconds = resolution)
+        open_at_time_before = list(prices[prices['startTime']==time_before]['open'])[0]
+
+        #calculate the return we would expect at this time
+        expected_return = (open_at_random_time/open_at_time_before) - 1
+
+        #get the actual return at this time
+        actual_return = list(prices[prices['startTime']==random_time]['return'])[0]
+
+        self.assertEqual(expected_return, actual_return)
+
+    def test_get_future_prices_with_include_returns_true(self):
+        resolution = 300
+        prices = self.data_fetcher.get_future_prices("BTC-PERP", datetime.now() - timedelta(hours=1), datetime.now(),
+                                                     resolution, include_return=True)
+        self.assertTrue('return' in list(prices.columns))
+
+        #pick a time and get the open at that time
+        random_time = list(prices['startTime'])[3]
+        open_at_random_time = list(prices[prices['startTime']==random_time]['open'])[0]
+
+        #get what should be the open for the previous interval
+        time_before = random_time - timedelta(seconds = resolution)
+        open_at_time_before = list(prices[prices['startTime']==time_before]['open'])[0]
+
+        #calculate the return we would expect at this time
+        expected_return = (open_at_random_time/open_at_time_before) - 1
+
+        #get the actual return at this time
+        actual_return = list(prices[prices['startTime']==random_time]['return'])[0]
+
+        self.assertEqual(expected_return, actual_return)
+
     def test_get_index_prices_with_invalid_resolution_throws_exception(self):
         resolution = 350
         with self.assertRaises(Exception) as context:

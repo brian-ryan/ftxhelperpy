@@ -3,14 +3,38 @@ import os
 from requests import Request, Session, PreparedRequest, Response
 import time
 
+class VariableNotSet(Exception):
+    """Raised when a required enviornment variable
+    is not set"""
+
+    def __init__(self, message):
+        super().__init__(message)
+
 class Connector:
 
-    def __init__(self, api_endpoint):
+    def __init__(self):
         self.create_session()
-        self.api_endpoint = api_endpoint
+        self.validate_env_variables()
+        self.api_endpoint = os.getenv("FTX_ENDPOINT")
+        self.ftx_key = os.getenv('FTX_KEY1')
 
     def create_session(self) -> None:
         self.session = Session()
+
+    def validate_env_variables(self) -> None:
+        """Validates that the required environment
+        variables are set. Throws VariableNotSet exception
+        if any variables have not been set"""
+
+        if os.getenv('FTX_ENDPOINT')==None:
+            raise VariableNotSet('FTX_ENDPOINT environment variable must be set and should '
+                                 'be the domain of the FTX api. Value will '
+                                 'most likely be https://ftx.com/api')
+
+        if os.getenv('FTX_KEY1')==None:
+            raise VariableNotSet('FTX_KEY1 environment variable must be set and should '
+                                 'contain your API key. See https://blog.ftx.com/blog/api-authentication/'
+                                 ' for retrieving your key.')
 
     def add_auth_headers(self, prepared_request: type[PreparedRequest]) -> PreparedRequest:
         """Adds authentication headers to the request.
@@ -24,7 +48,7 @@ class Connector:
 
         ts = int(time.time() * 1000)
         signature = self.get_signature(prepared_request, ts)
-        prepared_request.headers['FTX-KEY'] = os.getenv('FTX_KEY1')
+        prepared_request.headers['FTX-KEY'] = self.ftx_key
         prepared_request.headers['FTX-SIGN'] = signature
         prepared_request.headers['FTX-TS'] = str(ts)
         return prepared_request

@@ -8,7 +8,7 @@ class TestAccountMethods(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        connector = Connector(os.getenv("FTX_ENDPOINT"))
+        connector = Connector()
         cls.account = Account(connector)
 
     def setUp(self) -> None:

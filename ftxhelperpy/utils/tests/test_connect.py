@@ -8,7 +8,7 @@ class TestConnectMethods(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.connector = Connector(os.getenv("FTX_ENDPOINT"))
+        cls.connector = Connector()
 
     def setUp(self) -> None:
         self.connector = TestConnectMethods.connector

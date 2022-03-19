@@ -9,7 +9,7 @@ class TestMetaDataFetchMethods(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        connector = Connector(os.getenv("FTX_ENDPOINT"))
+        connector = Connector()
         cls.data_fetcher = MetaDataFetcher(connector)
 
     def setUp(self) -> None:

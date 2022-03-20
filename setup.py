@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name = 'ftxhelperpy',
-    version = '0.1.9',
+    version = '0.1.0',
     description = 'Python wrapper for interacting with the FTX api',
     url = 'https://github.com/BrianRyan94/ftxhelperpy',
     packages = setuptools.find_packages(),

@@ -18,7 +18,8 @@ class HistDataFetcher:
 
             Returns:
                 A pandas dataframe with columns for start time, time,
-                open, high, low, close, volume"""
+                open, high, low, close, volume
+        """
 
         prices_dict = response['result']
         if len(prices_dict)==0:
@@ -39,7 +40,8 @@ class HistDataFetcher:
                 response: The json data of a response object from a historical funding rates request
 
             Returns:
-                A pandas dataframe with columns for the future, time (datetime) and funding rate"""
+                A pandas dataframe with columns for the future, time (datetime) and funding rate
+        """
 
         rates_dict = response['result']
         if len(rates_dict)==0:
@@ -55,7 +57,8 @@ class HistDataFetcher:
                 response: The json data of a response object from a historical funding rates request
 
             Returns:
-                A pandas dataframe of the trade data"""
+                A pandas dataframe of the trade data
+        """
 
         trades_dict = response['result']
         if len(trades_dict)==0:
@@ -83,17 +86,17 @@ class HistDataFetcher:
         prices['return'] = (prices['open']/prices['open'].shift(1)) - 1
         return prices
 
-    def get_future_prices(self, symbol: str, start_time: datetime,
-                              end_time: datetime, resolution: int = 60,
+    def get_future_prices(self, symbol: str, start_time: int,
+                              end_time: int, resolution: int = 60,
                           include_return: bool = False) -> pd.DataFrame:
         """Retrieves the historical prices (candle format) for a symbols
 
             Args:
                 symbol: The symbol of the instrument. e.g. BTC-PERP
 
-                start_time: Start of the interval of time to retrieve prices
+                start_time: Start of the interval of time to retrieve prices as timestamp
 
-                end_time: End of the interval of time to retrieve prices
+                end_time: End of the interval of time to retrieve prices as timestamp
                 resolution: The size of the candle in seconds.
                 e.g. resolution = 300 means 5 minute candles
 
@@ -104,12 +107,13 @@ class HistDataFetcher:
                 11.59 am -> 12:00 pm was 5%. Defaults to false
 
             Returns:
-                A pandas dataframe of historical prices"""
+                A pandas dataframe of historical prices
+        """
 
         endpoint = "markets/{0}/candles".format(symbol)
         query_params = {
-            'start_time': datetime.timestamp(start_time),
-            'end_time': datetime.timestamp(end_time),
+            'start_time': start_time,
+            'end_time': end_time,
             'resolution': resolution
         }
         response = self.connector.auth_get_request(endpoint, query_params).json()
@@ -117,19 +121,37 @@ class HistDataFetcher:
         if response['success']==False:
             raise Exception(response['error'])
 
-        return self._format_prices(response, include_return)
+        formatted_prices = self._format_prices(response, include_return)
+        if formatted_prices.empty:
+            return formatted_prices
 
-    def get_index_prices(self, symbol: str, start_time: datetime,
-                              end_time: datetime, resolution: int = 60,
+        earliest_time = (list(formatted_prices['time'])[0])/ 1000
+        # since the api only returns a set number of results
+        # recursively call this until we get prices back as early as the start time
+        # second condition is just so there is a definite end to the recursion (if for some reason it cannot retrieve
+        # results back that far)
+        if ((earliest_time - start_time) > (resolution * 2)) and (earliest_time != end_time):
+            formatted_prices = pd.concat([self.get_future_prices(symbol, start_time, earliest_time,
+                                                                resolution, include_return), formatted_prices])
+            formatted_prices = formatted_prices.drop_duplicates(subset=['time']). \
+                sort_values(by='time', ascending=True)
+            return formatted_prices
+        # if the earliest time is close enough to the start time then return
+        else:
+            return formatted_prices
+
+    def get_index_prices(self, symbol: str, start_time: int,
+                              end_time: int, resolution: int = 60,
                             include_return: bool = False) -> pd.DataFrame:
         """Retrieves the historical prices (candle format) for indices
 
             Args:
                 symbol: The symbol of the instrument. e.g. BTC
 
-                start_time: Start of the interval of time to retrieve prices
+                start_time: Start of the interval of time to retrieve prices as
+                a timestamp
 
-                end_time: End of the interval of time to retrieve prices
+                end_time: End of the interval of time to retrieve prices as a timestamp
                 resolution: The size of the candle in seconds.
                 e.g. resolution = 300 means 5 minute candles
 
@@ -140,27 +162,42 @@ class HistDataFetcher:
                 11.59 am -> 12:00 pm was 5%. Defaults to false
 
             Returns:
-                A pandas dataframe of historical prices"""
+                A pandas dataframe of historical prices
+        """
 
         endpoint = "indexes/{0}/candles".format(symbol)
         query_params = {
-            'start_time': datetime.timestamp(start_time),
-            'end_time': datetime.timestamp(end_time),
+            'start_time': start_time,
+            'end_time': end_time,
             'resolution': resolution
         }
         response = self.connector.auth_get_request(endpoint, query_params).json()
         if response['success']==False:
             raise Exception(response['error'])
 
-        return self._format_prices(response, include_return)
+        formatted_prices = self._format_prices(response, include_return)
+        if formatted_prices.empty:
+            return formatted_prices
 
-    def get_rates(self, symbol: str, start_time: datetime, end_time: datetime) -> pd.DataFrame:
+        earliest_time = (list(formatted_prices['time'])[0])/ 1000
+        # since the api only returns a set number of results
+        # recursively call this until we get prices back as early as the start time
+        if ((earliest_time - start_time) > (resolution * 2)) & (earliest_time != end_time):
+            formatted_prices =  pd.concat([self.get_index_prices(symbol, start_time, earliest_time,
+                                                                resolution, include_return), formatted_prices])
+            formatted_prices = formatted_prices.drop_duplicates(subset = ['time']).\
+                sort_values(by = 'time', ascending = True)
+            return formatted_prices
+        else:
+            return formatted_prices
+
+    def get_rates(self, symbol: str, start_time: int, end_time: int) -> pd.DataFrame:
         """Retrieves the historical prices (candle format) for a symbol
 
             Args:
                 symbol: The symbol of the instrument. e.g. BTC-PERP
-                start_time: Start of the interval of time to retrieve rates
-                end_time: End of the interval of time to retrieve rates
+                start_time: Start of the interval of time to retrieve rates as timestamp
+                end_time: End of the interval of time to retrieve rates as timestamp
 
             Returns:
                 A pandas data frame with columns for the future name,
@@ -169,13 +206,14 @@ class HistDataFetcher:
                 - The funding rate is in decimal format.
                 - The funding rate is 1/24 of the premium of the future
                 to the underlying based on the previous 1 hour TWAP for the
-                swap and the future."""
+                swap and the future.
+        """
 
         endpoint = "funding_rates"
         query_params = {
             'future': symbol,
-            'start_time': datetime.timestamp(start_time),
-            'end_time': datetime.timestamp(end_time),
+            'start_time': start_time,
+            'end_time': end_time,
         }
 
         response = self.connector.auth_get_request(endpoint, query_params).json()
@@ -183,15 +221,32 @@ class HistDataFetcher:
         if response['success']==False:
             raise Exception(response['error'])
 
-        return self._format_rates(response)
+        formatted_rates = self._format_rates(response)
 
-    def get_trades(self, symbol: str, start_time: datetime, end_time: datetime) -> pd.DataFrame:
+        if formatted_rates.empty:
+            return formatted_rates
+
+        earliest_time = list(formatted_rates['time'])[0].timestamp()
+        # since the api only returns a set number of results
+        # recursively call this until we get prices back as early as the start time
+        if ((earliest_time - start_time) > (60*60)) & (earliest_time != end_time):
+            formatted_rates = pd.concat([self.get_rates(symbol, start_time, earliest_time), formatted_rates])
+            formatted_rates = formatted_rates.drop_duplicates(subset=['time']). \
+                sort_values(by='time', ascending=True)
+            return formatted_rates
+        else:
+            return formatted_rates
+
+    def get_trades(self, symbol: str, start_time: int, end_time: int) -> pd.DataFrame:
         """Retrieves the historical trades for a given symbol
+        This endpoint does not guarantee it will retrieve results for the
+        full timeframe as FTX only returns a set number of results in
+        its response.
 
             Args:
                 symbol: The symbol of the instrument. e.g. BTC-PERP
-                start_time: Start of the interval of time to retrieve trades
-                end_time: End of the interval of time to retrieve trades
+                start_time: Start of the interval of time to retrieve trades as timestamp
+                end_time: End of the interval of time to retrieve trades as timestamp
 
             Returns:
                 A pandas dataframe with columns for the trade id,
@@ -202,8 +257,8 @@ class HistDataFetcher:
         endpoint = "/markets/{0}/trades".format(symbol)
         query_params = {
             'market_name': symbol,
-            'start_time': datetime.timestamp(start_time),
-            'end_time':datetime.timestamp(end_time)
+            'start_time': start_time,
+            'end_time': end_time
         }
 
         response = self.connector.auth_get_request(endpoint, query_params).json()
@@ -211,7 +266,8 @@ class HistDataFetcher:
         if response['success']==False:
             raise Exception(response['error'])
 
-        return self._format_trades(response)
+        formatted_trades =  self._format_trades(response)
+        return formatted_trades
 
 class LiveDataFetcher:
 
@@ -235,7 +291,7 @@ class LiveDataFetcher:
                  has a key for 'price' and 'size' indicating
                  a level. The first element in each array
                  is the most competitive bid/ask
-            """
+        """
 
         endpoint = "/markets/{0}/orderbook".format(symbol)
         query_params = {

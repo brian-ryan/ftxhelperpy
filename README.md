@@ -54,6 +54,8 @@ connector = Connector()
 
 **Fetching Historical Data**
 
+If you set a very long time range with a low resolution (like 1 minute), this will take a while. FTX only returns a limited number of records, so each of the below methods could result in many requests being sent to FTX if the number of records is large.
+
 1. Create instance of the HistDataFetcher
 
 ```
@@ -78,10 +80,13 @@ symbol = 'BTC-PERP'
 # resolution will default to 60 (unit is seconds) if not set. This is the width of the returned candles
 resolution = 300
 
-fut_prices = hist_fetcher.get_future_prices("BTC-PERP".format(underlying), start_time, end_time, resolution)
+fut_prices = hist_fetcher.get_future_prices(symbol, start_time, end_time, resolution)
+```
 
+3. Fetch index prices
 
+Exact same as above, but just with an "index' ticker and calling a different method
 
-
-
-
+```
+index_prices = hist_fetcher.get_index_prices('BTC', start_time, end_time, resolution)
+```

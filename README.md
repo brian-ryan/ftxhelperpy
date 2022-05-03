@@ -14,3 +14,6 @@
 3. Install the package
 
 ```pip install git+https://github.com/BrianRyan94/ftxhelperpy.git```
+
+
+**Creating a Connector**

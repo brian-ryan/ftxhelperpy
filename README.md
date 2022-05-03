@@ -52,6 +52,36 @@ from ftxhelperpy.utils.connector import Connector
 connector = Connector()
 ``` 
 
+**Fetching Historical Data**
+
+1. Create instance of the HistDataFetcher
+
+```
+from ftxhelperpy.utils.connector import Connector
+from ftxhelperpy.mktdata.prices import HistDataFetcher
+
+connector = Connector()
+hist_fetcher = HistDataFetcher(connector)
+```
+
+2. Fetch future prices
+
+```
+import datetime as dt
+
+# start and end time are timestamps
+start_time = (dt.datetime.today() - dt.timedelta(days = 30)).timestamp()
+end_time = dt.datetime.today().timestamp()
+
+symbol = 'BTC-PERP'
+
+# resolution will default to 60 (unit is seconds) if not set. This is the width of the returned candles
+resolution = 300
+
+fut_prices = hist_fetcher.get_future_prices("BTC-PERP".format(underlying), start_time, end_time, resolution)
+
+
+
 
 
 

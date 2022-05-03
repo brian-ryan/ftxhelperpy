@@ -4,12 +4,13 @@
 
 1. Create a python3 virtual environment
 
-```
-python3 -m venv ftxenv
-```
+
+```python3 -m venv ftxenv```
 
 2. Activate the virtual env
 
 ```source ftxenv/bin/activate```
 
 3. Install the package
+
+```pip install git+https://github.com/BrianRyan94/ftxhelperpy.git```

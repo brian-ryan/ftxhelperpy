@@ -90,3 +90,16 @@ Exact same as above, but just with an "index' ticker and calling a different met
 ```
 index_prices = hist_fetcher.get_index_prices('BTC', start_time, end_time, resolution)
 ```
+
+4. Fetch historical trades
+
+```
+trades = hist_fetcher.get_trades('BTC-PERP', start_time, end_time)
+```
+
+5. Fetch historical hourly rates
+
+```
+rates = hist_fetcher.get_rates('BTC-PERP', start_time, end_time)
+```
+
